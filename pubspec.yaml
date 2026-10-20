@@ -27,7 +27,7 @@ dependencies:
   image_picker: ^1.0.4
   shared_preferences: ^2.2.2
 
-  # Networking (for OpenRouter AI)
+  # Networking (for Gemini AI)
   http: ^1.2.1
 
   # Utilities
