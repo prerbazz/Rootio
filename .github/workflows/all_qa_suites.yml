@@ -2,9 +2,6 @@ name: Rootio - Run All QA Test Suites (Master)
 
 on:
   workflow_dispatch:
-  schedule:
-    # Run weekly on Sunday midnight UTC
-    - cron: '0 0 * * 0'
 
 jobs:
   load-tests:
@@ -15,10 +12,9 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: '3.11'
-          cache: 'pip'
       - run: |
           python -m pip install --upgrade pip
-          pip install openpyxl requests pytest
+          pip install -r requirements.txt
           python qa/load_testing/run_load_tests.py
       - uses: actions/upload-artifact@v4
         with:
@@ -33,10 +29,9 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: '3.11'
-          cache: 'pip'
       - run: |
           python -m pip install --upgrade pip
-          pip install openpyxl requests pytest
+          pip install -r requirements.txt
           python qa/vulnerability_testing/run_vulnerability_tests.py
       - uses: actions/upload-artifact@v4
         with:
@@ -51,10 +46,9 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: '3.11'
-          cache: 'pip'
       - run: |
           python -m pip install --upgrade pip
-          pip install openpyxl requests pytest
+          pip install -r requirements.txt
           python qa/selenium_testing/run_selenium_tests.py
       - uses: actions/upload-artifact@v4
         with:
@@ -69,10 +63,9 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: '3.11'
-          cache: 'pip'
       - run: |
           python -m pip install --upgrade pip
-          pip install openpyxl requests pytest
+          pip install -r requirements.txt
           python qa/appium_testing/run_appium_tests.py
       - uses: actions/upload-artifact@v4
         with:
