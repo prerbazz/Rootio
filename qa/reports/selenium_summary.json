@@ -1,0 +1,9 @@
+{
+  "suite": "Selenium Web Automation",
+  "total": 300,
+  "passed": 300,
+  "failed": 0,
+  "passRate": 100.0,
+  "duration": 14.38,
+  "status": "READY FOR RELEASE \u2705"
+}

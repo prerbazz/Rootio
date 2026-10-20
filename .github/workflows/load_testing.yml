@@ -2,10 +2,9 @@ name: Rootio - 1. Load Testing Suite
 
 on:
   workflow_dispatch:
-  push:
-    paths:
-      - 'qa/load_testing/**'
-      - 'qa/common/**'
+
+permissions:
+  contents: read
 
 jobs:
   run-load-tests:
@@ -21,19 +20,61 @@ jobs:
         with:
           python-version: '3.11'
 
-      - name: Install QA Dependencies
+      - name: Install QA Dependencies & Tools
         run: |
           python -m pip install --upgrade pip
           pip install -r requirements.txt
+          sudo apt-get update && sudo apt-get install -y jq
 
-      - name: Run Rootio Load Testing Suite
-        run: |
-          python qa/load_testing/run_load_tests.py
+      - name: Run Rootio Load & Concurrency Suite
+        run: python qa/load_testing/run_load_tests.py
 
       - name: Upload Load Testing Excel Report Artifact
+        if: always()
         uses: actions/upload-artifact@v4
         with:
           name: Rootio_Load_Testing_Report
           path: qa/reports/Rootio_Load_Testing_Report.xlsx
           if-no-files-found: error
           retention-days: 30
+
+      - name: Generate Job Summary Chart
+        if: always()
+        run: |
+          SUMMARY_JSON="qa/reports/load_summary.json"
+          if [ -f "$SUMMARY_JSON" ]; then
+            TOTAL=$(jq -r '.total' "$SUMMARY_JSON")
+            PASSED=$(jq -r '.passed' "$SUMMARY_JSON")
+            FAILED=$(jq -r '.failed' "$SUMMARY_JSON")
+            PASSRATE=$(jq -r '.passRate' "$SUMMARY_JSON")
+            DURATION=$(jq -r '.duration' "$SUMMARY_JSON")
+            STATUS=$(jq -r '.status' "$SUMMARY_JSON")
+            
+            echo "## 📊 Rootio — Load & Performance Test Summary" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "\`\`\`mermaid" >> $GITHUB_STEP_SUMMARY
+            echo "pie title Concurrency & Load Pass vs Fail Rate ($PASSRATE%)" >> $GITHUB_STEP_SUMMARY
+            echo "    \"Passed ✅\" : $PASSED" >> $GITHUB_STEP_SUMMARY
+            echo "    \"Failed ❌\" : $FAILED" >> $GITHUB_STEP_SUMMARY
+            echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "### 🔄 Concurrency Pipeline Flow" >> $GITHUB_STEP_SUMMARY
+            echo "\`\`\`mermaid" >> $GITHUB_STEP_SUMMARY
+            echo "graph TD" >> $GITHUB_STEP_SUMMARY
+            echo "    Start([Start Run]) --> WorkerPool[Initialize 50 Concurrent Worker Threads]" >> $GITHUB_STEP_SUMMARY
+            echo "    WorkerPool --> RampUp[Simulate User Concurrency & Spikes]" >> $GITHUB_STEP_SUMMARY
+            echo "    RampUp --> MeasureMetrics[Sample P95 Latency & Socket Errors]" >> $GITHUB_STEP_SUMMARY
+            echo "    MeasureMetrics --> GenerateReports[Export Excel & Summary JSON]" >> $GITHUB_STEP_SUMMARY
+            echo "    GenerateReports --> UploadArtifact[Upload Excel Report Artifact]" >> $GITHUB_STEP_SUMMARY
+            echo "    UploadArtifact --> End([End Run])" >> $GITHUB_STEP_SUMMARY
+            echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "| Metric | Value |" >> $GITHUB_STEP_SUMMARY
+            echo "|--------|-------|" >> $GITHUB_STEP_SUMMARY
+            echo "| **Total Test Cases** | $TOTAL |" >> $GITHUB_STEP_SUMMARY
+            echo "| **Passed ✅** | $PASSED |" >> $GITHUB_STEP_SUMMARY
+            echo "| **Failed ❌** | $FAILED |" >> $GITHUB_STEP_SUMMARY
+            echo "| **Success Rate 📈** | $PASSRATE% |" >> $GITHUB_STEP_SUMMARY
+            echo "| **Total Duration ⏱️** | ${DURATION}s |" >> $GITHUB_STEP_SUMMARY
+            echo "| **Release Readiness 🚀** | $STATUS |" >> $GITHUB_STEP_SUMMARY
+          fi

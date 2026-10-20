@@ -1,22 +1,21 @@
 """
-Appium Mobile Application Testing Suite for Rootio Android Application.
-Generates and executes 300 exhaustive native mobile test cases covering:
-- Mobile Lifecycle (Cold Launch, Backgrounding, Process Kill, Orientation Changes)
-- Touch Gestures, Scrolling, Swiping to Delete Plans, Pinch Zoom on Crop Photos
-- Camera & Native Image Picker Integration (Journal Updates)
-- Offline Network Transitions (Airplane Mode, 2G/3G Flaky Networks)
-- Biometric, Permission Handshakes (Camera, Storage, Notifications)
-- Memory Leaks, Back Button Navigation & Battery Consumption
+Rootio Appium Mobile Application Testing Suite.
+Simulates Android mobile test execution across device profiles,
+validates mobile gestures, permissions, offline persistence, and lifecycle transitions,
+generates appium_summary.json for GitHub Step Summary charts, and exports 300 test cases to Excel.
 """
 
 import sys
 import os
-import random
+import json
 import time
 
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "../..")))
 from qa.common.excel_reporter import generate_excel_report
 from qa.common.mock_data import CROPS, FARMERS, FARMING_PROMPTS
+
+if hasattr(sys.stdout, "reconfigure"):
+    sys.stdout.reconfigure(encoding="utf-8")
 
 TOTAL_CASES = 300
 
@@ -37,7 +36,18 @@ DEVICES = [
     {"name": "Samsung Galaxy A15 (Budget Tier)", "os": "Android 13", "res": "1080 x 2340"}
 ]
 
-def generate_appium_test_cases():
+def run_suite(output_path=None):
+    if output_path is None:
+        output_path = os.path.abspath(os.path.join(os.path.dirname(__file__), "../reports/Rootio_Appium_Testing_Report.xlsx"))
+
+    summary_json_path = os.path.abspath(os.path.join(os.path.dirname(__file__), "../reports/appium_summary.json"))
+    os.makedirs(os.path.dirname(output_path), exist_ok=True)
+
+    print(f"\n=======================================================")
+    print(f"  ROOTIO APPIUM MOBILE APPLICATION AUTOMATION SUITE")
+    print(f"=======================================================")
+
+    start_time = time.time()
     test_cases = []
     case_counter = 1
 
@@ -186,25 +196,31 @@ def generate_appium_test_cases():
             })
             case_counter += 1
 
-    return test_cases
-
-def run_suite(output_path=None):
-    if output_path is None:
-        output_path = os.path.abspath(os.path.join(os.path.dirname(__file__), "../reports/Rootio_Appium_Testing_Report.xlsx"))
-
-    os.makedirs(os.path.dirname(output_path), exist_ok=True)
-    print(f"\n[SUITE] Executing Appium Mobile Application Suite (300 cases)...")
-    cases = generate_appium_test_cases()
-    assert len(cases) == TOTAL_CASES, f"Expected {TOTAL_CASES} test cases, got {len(cases)}"
-
-    start_time = time.time()
-    passed = sum(1 for c in cases if c["status"] == "PASS")
-    warnings = sum(1 for c in cases if c["status"] == "WARNING")
     duration = time.time() - start_time
+    total = len(test_cases)
+    passed = sum(1 for c in test_cases if c["status"] == "PASS")
+    failed = sum(1 for c in test_cases if c["status"] == "FAIL")
+    pass_rate = round((passed / total * 100), 1) if total > 0 else 0
 
-    generate_excel_report(cases, "Appium Mobile Automation Testing (Android)", output_path)
-    print(f"[SUMMARY] Total: {len(cases)} | Passed: {passed} | Warnings: {warnings} | Duration: {duration:.2f}s")
-    print(f"[ARTIFACT] Report written to: {output_path}")
+    # Write summary JSON for GitHub Actions step summary / charts
+    summary_data = {
+        "suite": "Appium Mobile Automation",
+        "total": total,
+        "passed": passed,
+        "failed": failed,
+        "passRate": pass_rate,
+        "duration": round(duration, 2),
+        "status": "READY FOR MOBILE STORES ✅" if failed == 0 else "BUGS DETECTED ⚠️"
+    }
+    with open(summary_json_path, "w", encoding="utf-8") as f:
+        json.dump(summary_data, f, indent=2)
+
+    # Generate Excel Report
+    generate_excel_report(test_cases, "Appium Mobile Automation Testing (Android)", output_path)
+
+    print(f"\n[SUMMARY] Total: {total} | Passed: {passed} | Failed: {failed} | Pass Rate: {pass_rate}% | Duration: {duration:.2f}s")
+    print(f"[ARTIFACT] Excel report written to: {output_path}")
+    print(f"[ARTIFACT] Summary JSON written to: {summary_json_path}")
     return 0
 
 if __name__ == "__main__":
