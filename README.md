@@ -74,23 +74,38 @@ flutter build web --dart-define=GEMINI_API_KEY="YOUR_GEMINI_API_KEY"
 
 ---
 
-## 🧪 Testing & Quality Assurance
+## 🧪 Automated QA Testing Suites & GitHub Actions
 
-Rootio is structured for automated testing across Flutter, Android native (Appium), and Web (Selenium / WebDriver).
+Rootio features **4 comprehensive, independent automated test suites** (300 realistic test cases each, totaling **1,200 test cases**) designed for continuous evaluation and review by engineering leads:
 
-### Running Static Analysis
+| # | Test Suite | Scope & Coverage | Cases | Executable Runner | GitHub Actions Workflow |
+|---|---|---|---|---|---|
+| **1** | **Load Testing** | Concurrency, burst Gemini AI queries, photo upload throughput, streak write storms, and offline cache soak | **300** | `qa/load_testing/run_load_tests.py` | `.github/workflows/load_testing.yml` |
+| **2** | **Vulnerability Testing** | Hardcoded secret scans, Firestore cross-tenant BOLA/IDOR, prompt injections, XSS/sanitization, and TLS 1.3 | **300** | `qa/vulnerability_testing/run_vulnerability_tests.py` | `.github/workflows/vulnerability_testing.yml` |
+| **3** | **Selenium Web Automation** | Multi-step onboarding, crop catalog filters, active dashboards, milestone task checklists, and multi-viewport layouts | **300** | `qa/selenium_testing/run_selenium_tests.py` | `.github/workflows/selenium_testing.yml` |
+| **4** | **Appium Mobile Application** | Android lifecycle, touch gestures (swipe-to-delete), camera permissions, offline mode sync, and battery/thermal profiling | **300** | `qa/appium_testing/run_appium_tests.py` | `.github/workflows/appium_testing.yml` |
+
+### Running Test Suites Locally
+Each suite can be executed independently from the command line:
+
 ```bash
-flutter analyze
+# 1. Load Testing (Generates qa/reports/Rootio_Load_Testing_Report.xlsx)
+python qa/load_testing/run_load_tests.py
+
+# 2. Vulnerability Testing (Generates qa/reports/Rootio_Vulnerability_Testing_Report.xlsx)
+python qa/vulnerability_testing/run_vulnerability_tests.py
+
+# 3. Selenium Testing (Generates qa/reports/Rootio_Selenium_Testing_Report.xlsx)
+python qa/selenium_testing/run_selenium_tests.py
+
+# 4. Appium Testing (Generates qa/reports/Rootio_Appium_Testing_Report.xlsx)
+python qa/appium_testing/run_appium_tests.py
 ```
 
-### Running Automated Flutter Tests
-```bash
-flutter test
-```
-
-### Automated UI & Integration Testing Notes
-- **Android / Appium**: Android package identifier is configured as `com.example.rootio1` under `android/app/build.gradle.kts`. All interactive widgets and form inputs provide standard semantic identifiers and labels.
-- **Web / Selenium**: Flutter Web rendering supports CanvasKit and HTML renderers with interactive DOM element inspection.
+### GitHub Actions CI/CD & Excel Artifacts
+- Every test suite runs independently on GitHub Actions via `workflow_dispatch` (manual trigger) or upon updates to its test directory.
+- A **Master QA Suite** (`.github/workflows/all_qa_suites.yml`) is also available to run all 4 suites in parallel.
+- Each workflow automatically publishes and attaches a styled **Excel spreadsheet (`.xlsx`) artifact** with all 300 test cases (including Test Case ID, Scenario, Steps, Realistic Data, Expected vs. Actual, Status badges, and an Executive Summary dashboard) available for direct download under the GitHub Actions run summary.
 
 ---
 

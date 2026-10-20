@@ -1,0 +1,40 @@
+name: Rootio - 3. Selenium Web Automation Testing Suite
+
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - 'qa/selenium_testing/**'
+      - 'qa/common/**'
+
+jobs:
+  run-selenium-tests:
+    name: Execute Selenium Testing (300 Test Cases)
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: 'pip'
+
+      - name: Install QA Dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install openpyxl requests pytest
+
+      - name: Run Rootio Selenium Automation Suite
+        run: |
+          python qa/selenium_testing/run_selenium_tests.py
+
+      - name: Upload Selenium Testing Excel Report Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: Rootio_Selenium_Testing_Report
+          path: qa/reports/Rootio_Selenium_Testing_Report.xlsx
+          if-no-files-found: error
+          retention-days: 30

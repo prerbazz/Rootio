@@ -1,0 +1,40 @@
+name: Rootio - 1. Load Testing Suite
+
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - 'qa/load_testing/**'
+      - 'qa/common/**'
+
+jobs:
+  run-load-tests:
+    name: Execute Load Testing (300 Test Cases)
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: 'pip'
+
+      - name: Install QA Dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install openpyxl requests pytest
+
+      - name: Run Rootio Load Testing Suite
+        run: |
+          python qa/load_testing/run_load_tests.py
+
+      - name: Upload Load Testing Excel Report Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: Rootio_Load_Testing_Report
+          path: qa/reports/Rootio_Load_Testing_Report.xlsx
+          if-no-files-found: error
+          retention-days: 30
